@@ -142,6 +142,7 @@ def plot_annotations_by_year():
     tokens = df[(df[1]=='TOKENS_QUANTITY')]
     tokens[4] = [el[el.rfind('_')+1:] for el in tokens[0]]
     tokens_year = tokens.groupby([4])[3].agg('sum').reset_index()
+    #tokens.groupby([4]).count()
     tokens_year.columns = ['year','tokens'] 
     print tokens_year
     df_to_plot = df[(df[2]!='ORIGINAL MARKUPS') & (df[2]!='GENERAL_DOCUMENT') ]
