@@ -1,28 +1,68 @@
 '''
 Created on Jan 16, 2019
 
+To run the file 
+python plot.py -f1 servier/total_annotation_measurement.dat -f2 servier/documents_annotation_measurement.dat -outputDir servier
+
 @author: jcorvi
 '''
 import pandas 
+import sys
+import os
+import argparse
 import matplotlib.pyplot as plt
 import numpy as np
+import logging
 from matplotlib.pyplot import legend
 from numpy.core.defchararray import capitalize
 
+parser=argparse.ArgumentParser()
+parser.add_argument('-f1', help='Total annotation measurement files')
+parser.add_argument('-f2', help='Total documents annotation measurement files')
+parser.add_argument('-outputDir', help='Output Dir, could be the EFPIA partner name')
+args=parser.parse_args()
+parameters={}
 if __name__ == '__main__':
     import plot
+    parameters = plot.ReadParameters(args)
     plot.plot_annotations_set_measurement()
     plot.plot_annotations_by_source()
     plot.plot_annotations_study_domain()
     plot.plot_annotations_by_year()
     
+def ReadParameters(args):
+    """Read the parameters of the module, see --help"""
+    missing_parameter=False
+    if(args.f1!=None):
+        parameters['total_annotation_measurement']=args.f1
+    else:
+        missing_parameter=True
+        logging.error("Please set the Total annotation measurement file, for more information --help ")
+    if(args.f2!=None):
+        parameters['documents_annotation_measurement']=args.f2
+    else:
+        missing_parameter=True
+        logging.error("Please set the Total documents annotation measurement file, for more information --help ")
+    if(args.outputDir!=None):
+        parameters['outputDir']=args.outputDir + '/'
+        if not os.path.exists(parameters['outputDir']):
+            os.makedirs(parameters['outputDir'])
+    else:
+        missing_parameter=True
+        logging.error("Please set the Output directory for the plots, for more information --help ")
+        
+    if(missing_parameter):
+        logging.error("Please set the correct parameters before continue --help ")
+        sys.exit(1)
+        
+    return parameters    
 
 def plot_annotations_by_source():
-    annotation_measurement_path = 'total_annotation_measurement.dat'
+    annotation_measurement_path = parameters['total_annotation_measurement']
     df = pandas.read_csv(annotation_measurement_path, sep='\t', header=None)
-    df_to_plot = df[(df[1]!='ORIGINAL MARKUPS') & (df[0]!='TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE') & (df[0]!='NO_TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE')]
+    df_to_plot = df[(df[0]!='SENTENCES_TEXT') & (df[1]!='ORIGINAL MARKUPS') & (df[0]!='TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE') & (df[0]!='NO_TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE')]
     df_grouped = df_to_plot[(df_to_plot[1]=='SEX') | (df_to_plot[1]=='MANIFESTATION_OF_FINDING') | (df_to_plot[1]=='STUDY_TESTCD') | (df_to_plot[1]=='STUDY_DOMAIN') | (df_to_plot[1]=='RISK_LEVEL')].groupby([1]).agg('sum').reset_index()
-    df_default = df[(df[1]=='DEFAULT') & (df[0]!='TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE') & (df[0]!='NO_TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE')]
+    df_default = df[(df[1]=='DEFAULT') & (df[0]!='SENTENCES_TEXT') & (df[0]!='TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE') & (df[0]!='NO_TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE')]
     df_default = df_default.drop([1], axis=1)
     df_default.columns = [1, 2, 3 ,4, 5 ]
     frames = [df_grouped, df_default]
@@ -50,20 +90,20 @@ def plot_annotations_by_source():
     plt.xlabel("Field")
     plt.legend()
     plt.ylabel("# Terms Mentions")
-    plt.title('Annotated Fields by source, 46 Bayer study reports')
+    plt.title('Annotated Fields by source')
     plt.gcf().subplots_adjust(bottom=0.40)
     plt.gcf().set_size_inches(16.5, 6.0)
-    plt.savefig('annotations_by_source.png')
+    plt.savefig(parameters['outputDir']+'annotations_by_source.png')
     #plt.show()
     plt.gcf().clear()
     
 def plot_annotations_set_measurement():
-    annotation_measurement_path = 'total_annotation_measurement.dat'
+    annotation_measurement_path = parameters['total_annotation_measurement']
     df = pandas.read_csv(annotation_measurement_path, sep='\t', header=None, )
     df = df[df.columns[[0,1,2]]]
-    df_to_plot = df[(df[1]!='ORIGINAL MARKUPS') & (df[0]!='TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE') & (df[0]!='NO_TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE')]
+    df_to_plot = df[(df[0]!='SENTENCES_TEXT') & (df[1]!='ORIGINAL MARKUPS') & (df[0]!='TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE') & (df[0]!='NO_TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE')]
     df_grouped = df_to_plot[(df_to_plot[1]=='SEX') | (df_to_plot[1]=='MANIFESTATION_OF_FINDING') | (df_to_plot[1]=='STUDY_TESTCD') | (df_to_plot[1]=='STUDY_DOMAIN') | (df_to_plot[1]=='RISK_LEVEL')].groupby([1])[2].agg('sum').reset_index()
-    df_default = df[(df[1]=='DEFAULT') & (df[0]!='TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE') & (df[0]!='NO_TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE')]
+    df_default = df[(df[1]=='DEFAULT') & (df[0]!='SENTENCES_TEXT') & (df[0]!='TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE') & (df[0]!='NO_TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE')]
     df_default = df_default.drop([1], axis=1)
     df_default.columns = [1, 2]
     frames = [df_grouped, df_default]
@@ -78,15 +118,15 @@ def plot_annotations_set_measurement():
         ax.text(i.get_x() + i.get_width()/2., i.get_height()-1, str(i.get_height()), fontsize=10, color='black',ha='center')
     plt.xlabel("Field")
     plt.ylabel("# Terms Mentions")
-    plt.title('Annotated Fields, 46 Bayer study reports')
+    plt.title('Annotated Fields')
     plt.gcf().subplots_adjust(bottom=0.40)
     plt.gcf().set_size_inches(16.5, 6.0)
-    plt.savefig('all_set_annotations.png')
+    plt.savefig(parameters['outputDir']+ 'all_set_annotations.png')
     #plt.show()
     plt.gcf().clear()
 
 def plot_annotations_study_domain():
-    annotation_measurement_path = 'total_annotation_measurement.dat'
+    annotation_measurement_path = parameters['total_annotation_measurement']
     df = pandas.read_csv(annotation_measurement_path, sep='\t', header=None)
     df = df[df.columns[[0,1,2]]]
     df_to_plot = df[(df[1]=='STUDY_DOMAIN')]
@@ -97,19 +137,19 @@ def plot_annotations_study_domain():
     ax.annotate(str(total) + ' study domain terms mentions in total', xy=(0.70,0.90),xycoords='axes fraction', fontsize=10)
     for i in ax.patches:
         ax.text(i.get_x() + i.get_width()/2., i.get_height()-1, str(i.get_height()), fontsize=10, color='black',ha='center')
-    plt.title('Annotated Study Domains, 46 Bayer study reports')
+    plt.title('Annotated Study Domains')
     plt.xlabel("Study Domain")
     plt.xticks(rotation=90)
     plt.ylabel("# Terms Mentions")
     plt.gcf().subplots_adjust(bottom=0.40)
     plt.gcf().set_size_inches(16.5, 6.0)
-    plt.savefig('study_domain.png')
+    plt.savefig(parameters['outputDir']+'study_domain.png')
     #plt.show()
     plt.gcf().clear()
 
     
 def plot_annotations_by_year():
-    annotation_measurement_path = 'documents_annotation_measurement.dat'
+    annotation_measurement_path = parameters['documents_annotation_measurement']
     df = pandas.read_csv(annotation_measurement_path, sep='\t', header=None)
     tokens = df[(df[1]=='TOKENS_QUANTITY')]
     tokens[4] = [el[el.rfind('_')+1:] for el in tokens[0]]
@@ -137,7 +177,7 @@ def plot_annotations_by_year():
     plt.title('Annotated Fields, Annotations % over tokens by year')
     plt.gcf().subplots_adjust(bottom=0.20)
     plt.gcf().set_size_inches(16.5, 6.0)
-    plt.savefig('annotations_by_year.png')
+    plt.savefig(parameters['outputDir']+'annotations_by_year.png')
     #plt.show()
     plt.gcf().clear()    
     
