@@ -61,7 +61,7 @@ def plot_annotations_by_source():
     annotation_measurement_path = parameters['total_annotation_measurement']
     df = pandas.read_csv(annotation_measurement_path, sep='\t', header=None)
     df_to_plot = df[(df[0]!='SENTENCES_TEXT') & (df[1]!='ORIGINAL MARKUPS') & (df[0]!='TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE') & (df[0]!='NO_TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE')]
-    df_grouped = df_to_plot[(df_to_plot[1]=='SEX') | (df_to_plot[1]=='MANIFESTATION_OF_FINDING') | (df_to_plot[1]=='STUDY_TESTCD') | (df_to_plot[1]=='STUDY_DOMAIN') | (df_to_plot[1]=='RISK_LEVEL')].groupby([1]).agg('sum').reset_index()
+    df_grouped = df_to_plot[(df_to_plot[1]=='SEX') | (df_to_plot[1]=='MANIFESTATION_FINDING') | (df_to_plot[1]=='STUDY_TESTCD') | (df_to_plot[1]=='STUDY_DOMAIN') | (df_to_plot[1]=='RISK_LEVEL')].groupby([1]).agg('sum').reset_index()
     df_default = df[(df[1]=='DEFAULT') & (df[0]!='SENTENCES_TEXT') & (df[0]!='TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE') & (df[0]!='NO_TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE')]
     df_default = df_default.drop([1], axis=1)
     df_default.columns = [1, 2, 3 ,4, 5 ]
@@ -102,7 +102,7 @@ def plot_annotations_set_measurement():
     df = pandas.read_csv(annotation_measurement_path, sep='\t', header=None, )
     df = df[df.columns[[0,1,2]]]
     df_to_plot = df[(df[0]!='SENTENCES_TEXT') & (df[1]!='ORIGINAL MARKUPS') & (df[0]!='TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE') & (df[0]!='NO_TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE')]
-    df_grouped = df_to_plot[(df_to_plot[1]=='SEX') | (df_to_plot[1]=='MANIFESTATION_OF_FINDING') | (df_to_plot[1]=='STUDY_TESTCD') | (df_to_plot[1]=='STUDY_DOMAIN') | (df_to_plot[1]=='RISK_LEVEL')].groupby([1])[2].agg('sum').reset_index()
+    df_grouped = df_to_plot[(df_to_plot[1]=='SEX') | (df_to_plot[1]=='MANIFESTATION_FINDING') | (df_to_plot[1]=='STUDY_TESTCD') | (df_to_plot[1]=='STUDY_DOMAIN') | (df_to_plot[1]=='RISK_LEVEL')].groupby([1])[2].agg('sum').reset_index()
     df_default = df[(df[1]=='DEFAULT') & (df[0]!='SENTENCES_TEXT') & (df[0]!='TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE') & (df[0]!='NO_TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE')]
     df_default = df_default.drop([1], axis=1)
     df_default.columns = [1, 2]
@@ -158,7 +158,7 @@ def plot_annotations_by_year():
     print tokens_year
     tokens_year.columns = ['year','tokens','reports'] 
     df_to_plot = df[(df[2]!='ORIGINAL MARKUPS') & (df[2]!='GENERAL_DOCUMENT') ]
-    df_to_plot = df_to_plot[(df_to_plot[2]=='SEX') | (df_to_plot[2]=='MANIFESTATION_OF_FINDING') | (df_to_plot[2]=='STUDY_TESTCD') | (df_to_plot[2]=='STUDY_DOMAIN') | (df_to_plot[2]=='RISK_LEVEL')]
+    df_to_plot = df_to_plot[(df_to_plot[2]=='SEX') | (df_to_plot[2]=='MANIFESTATION_FINDING') | (df_to_plot[2]=='STUDY_TESTCD') | (df_to_plot[2]=='STUDY_DOMAIN') | (df_to_plot[2]=='RISK_LEVEL')]
     df_to_plot[4] = [el[el.rfind('_')+1:] for el in df_to_plot[0]]
     df_sum = df_to_plot.groupby([4])[3].agg('sum').reset_index()
     df_sum.columns = ['year','annotations'] 

@@ -2,7 +2,7 @@
 Created on Jan 16, 2019
 
 To run the file 
-python plot.py -f1 servier/total_annotation_measurement.dat -f2 servier/documents_annotation_measurement.dat -outputDir servier
+python plot_multiefpia_comparison.py -f1 bayer/total_annotation_measurement.dat,sanofi/total_annotation_measurement.dat,servier/total_annotation_measurement.dat -f2 bayer/documents_annotation_measurement.dat,sanofi/documents_annotation_measurement.dat,servier/documents_annotation_measurement.dat -outputDir multoefpia
 
 @author: jcorvi
 '''
@@ -21,8 +21,8 @@ parser.add_argument('-outputDir', help='Output Dir, could be the EFPIA partner n
 args=parser.parse_args()
 parameters={}
 if __name__ == '__main__':
-    import plot_multiefpia_comparation
-    parameters = plot_multiefpia_comparation.ReadParameters(args)
+    import plot_multiefpia_comparison
+    parameters = plot_multiefpia_comparison.ReadParameters(args)
     
     total_annotation_measurement = parameters['total_annotation_measurement'].split(",")
     documents_annotation_measurement = parameters['documents_annotation_measurement'].split(",")
@@ -30,9 +30,10 @@ if __name__ == '__main__':
         logging.error("The numbers of total field and document files have to be the same.")
        
     #for path1,path2 in zip(total_annotation_measurement,documents_annotation_measurement):
-    plot_multiefpia_comparation.plot_annotations_set_measurement(total_annotation_measurement,['Bayer','Sanofi','Servier'],['b','r','g'])
-    #plot_multiefpia_comparation.plot_annotations_study_domain(documents_annotation_measurement)
-       
+    #plot_multiefpia_comparation.plot_annotations_set_measurement(total_annotation_measurement, parameters['outputDir']+ 'all_set_annotations_percentage.png',['Bayer','Sanofi','Servier'],['b','r','g'],True)
+    plot_multiefpia_comparison.plot_annotations_set_measurement(total_annotation_measurement,parameters['outputDir']+ 'all_set_annotations_quantity.png',['Bayer','Sanofi','Servier'],['b','r','g'],False)
+    #plot_multiefpia_comparation.plot_annotations_study_domain(total_annotation_measurement,parameters['outputDir']+ 'study_domain_percentage.png',['Bayer','Sanofi','Servier'],['b','r','g'],True)
+    plot_multiefpia_comparison.plot_annotations_study_domain(total_annotation_measurement,parameters['outputDir']+ 'study_domain_quantity.png',['Bayer','Sanofi','Servier'],['b','r','g'],False)   
 def ReadParameters(args):
     """Read the parameters of the module, see --help"""
     missing_parameter=False
@@ -62,22 +63,24 @@ def ReadParameters(args):
 
 
     
-def plot_annotations_set_measurement(annotation_measurement_paths,efpias,colors):
-    
+def plot_annotations_set_measurement(annotation_measurement_paths, output,efpias,colors, percentage=True):
     list_to_plot = []
     for path1,efpia,c in zip(annotation_measurement_paths,efpias,colors):
         values=[]
         df = pandas.read_csv(path1, sep='\t', header=None)
         df = df[df.columns[[0,1,2]]]
         df_to_plot = df[(df[0]!='SENTENCES_TEXT') & (df[1]!='ORIGINAL MARKUPS') & (df[0]!='TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE') & (df[0]!='NO_TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE')]
-        df_grouped = df_to_plot[(df_to_plot[1]=='SEX') | (df_to_plot[1]=='MANIFESTATION_OF_FINDING') | (df_to_plot[1]=='STUDY_TESTCD') | (df_to_plot[1]=='STUDY_DOMAIN') | (df_to_plot[1]=='RISK_LEVEL')].groupby([1])[2].agg('sum').reset_index()
+        df_grouped = df_to_plot[(df_to_plot[1]=='SEX') | (df_to_plot[1]=='MANIFESTATION_FINDING') | (df_to_plot[1]=='STUDY_TESTCD') | (df_to_plot[1]=='STUDY_DOMAIN') | (df_to_plot[1]=='RISK_LEVEL')].groupby([1])[2].agg('sum').reset_index()
         df_default = df[(df[1]=='DEFAULT') & (df[0]!='SENTENCES_TEXT') & (df[0]!='TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE') & (df[0]!='NO_TREATMENT_RELATED_EFFECT_DETECTED_SENTENCE')]
         df_default = df_default.drop([1], axis=1)
         df_default.columns = [1, 2]
         frames = [df_grouped, df_default]
         df_to_plot = pandas.concat(frames)
         df_to_plot.columns=['key','value']
-        
+        if(percentage==True):
+            tokens_df = df[(df[0]=='TOKENS_QUANTITY')]
+            tokens = float(tokens_df.get_value(tokens_df.index[0],2))
+            df_to_plot['value'] = df_to_plot['value']/tokens
         #Get Specific fields for plot
         xdata=['Anatomy','Study Domain', 'Sex', 'Study Test', 'Specimen', 'Route of Administration', 'Species', 'Dose', 'Group', 'Manifestation of Finding', 'Mode of Action',  \
                'Treatment Related Term', 'Strain','No Treatment Related Term',  'Statical Significance', 'Risk Level' ]
@@ -90,7 +93,7 @@ def plot_annotations_set_measurement(annotation_measurement_paths,efpias,colors)
         values.append(getFieldValue(df_to_plot, 'SPECIES'))
         values.append(getFieldValue(df_to_plot, 'DOSE'))
         values.append(getFieldValue(df_to_plot, 'GROUP'))
-        values.append(getFieldValue(df_to_plot, 'MANIFESTATION_OF_FINDING'))
+        values.append(getFieldValue(df_to_plot, 'MANIFESTATION_FINDING'))
         values.append(getFieldValue(df_to_plot, 'MODE_OF_ACTION'))
         values.append(getFieldValue(df_to_plot, 'TREATMENT_RELATED_EFFECT_DETECTED'))
         values.append(getFieldValue(df_to_plot, 'STRAIN'))
@@ -98,11 +101,7 @@ def plot_annotations_set_measurement(annotation_measurement_paths,efpias,colors)
         values.append(getFieldValue(df_to_plot, 'STATICAL_SIGNIFICANCE'))
         values.append(getFieldValue(df_to_plot, 'RISK_LEVEL'))
         list_to_plot.append([values, efpia, c])
-
-        
-        
-        '''df_to_plot['key'] = [  el.replace('_',' ').replace(' ','\n',2).capitalize() for el in df_to_plot['key']]
-        total = df_to_plot['value'].sum()'''
+    
     barWidth=0.2    
     in_ = 0    
     for row in list_to_plot:
@@ -118,30 +117,13 @@ def plot_annotations_set_measurement(annotation_measurement_paths,efpias,colors)
     
     
     plt.xticks([r + barWidth for r in range(len(values))], xdata, rotation=90 )
-    '''        
-    xdata=df_to_plot[1]
-    cliente1 = list(df_to_plot[2])
-    cliente2 = list(df_to_plot[2])
-    cliente3 = list(df_to_plot[2])
-    
-    
-    
-    r1 = np.arange(len(cliente1))
-    r2 = [x + barWidth for x in r1]
-    r3 = [x + barWidth for x in r2]
-    
-    plt.bar(r1, cliente1, color='b', width=barWidth, edgecolor='white', label='Bayer')
-    plt.bar(r2, cliente2, color='g', width=barWidth, edgecolor='white', label='Sanofi')
-    plt.bar(r3, cliente3, color='r', width=barWidth, edgecolor='white', label='Servier')
-    '''
-    
     plt.legend()
     plt.xlabel("Field")
     plt.ylabel("# Terms Mentions")
     plt.title('Annotated Fields')
     plt.gcf().subplots_adjust(bottom=0.40)
     plt.gcf().set_size_inches(16.5, 6.0)
-    plt.savefig(parameters['outputDir']+ 'all_set_annotations.png')
+    plt.savefig(output)
     plt.show()
     plt.gcf().clear()
 
@@ -154,25 +136,59 @@ def getFieldValue(df, fieldName):
     return v
     
 
-def plot_annotations_study_domain(annotation_measurement_path):
-    df = pandas.read_csv(annotation_measurement_path, sep='\t', header=None)
-    df = df[df.columns[[0,1,2]]]
-    df_to_plot = df[(df[1]=='STUDY_DOMAIN')]
-    df_to_plot[3] = [el.replace('_DOMAIN','').replace('_','\n').capitalize() for el in df_to_plot[0]]
-    df_to_plot = df_to_plot.sort_values(by=[2],ascending=[0])
-    total = df_to_plot[2].sum()
-    ax = df_to_plot.plot.bar(x=3, y=2 , legend=False)
-    ax.annotate(str(total) + ' study domain terms mentions in total', xy=(0.70,0.90),xycoords='axes fraction', fontsize=10)
-    for i in ax.patches:
-        ax.text(i.get_x() + i.get_width()/2., i.get_height()-1, str(i.get_height()), fontsize=10, color='black',ha='center')
-    plt.title('Annotated Study Domains')
+def plot_annotations_study_domain(annotation_measurement_paths, output, efpias,colors, percentage=True):
+    list_to_plot = []
+    xdata=['Clinical','Microscopic', 'Death Diagnosis', 'Food and Water Consumption', 'Fetal Pathology', 'Body Weight', 'Body Weight Gain', 'Organ Measurement', 'Cardiovascular', 'Behavioral','Macroscopic', 'ECG',  \
+               'Respiratory', 'Pharmacokinetics','Laboratory']
+    for path1,efpia,c in zip(annotation_measurement_paths,efpias,colors):
+        values=[]
+        df = pandas.read_csv(path1, sep='\t', header=None)
+        df = df[df.columns[[0,1,2]]]
+        df_to_plot = df[(df[1]=='STUDY_DOMAIN')]
+        df_to_plot.columns=['key','source','value']
+        tokens = df_to_plot['value'].sum()
+        if(percentage==True):
+            df_to_plot['value'] = df_to_plot['value']/tokens
+        values.append(getFieldValue(df_to_plot, 'CLINICAL_DOMAIN'))
+        values.append(getFieldValue(df_to_plot, 'MICROSCOPIC_FINDINGS_DOMAIN'))
+        values.append(getFieldValue(df_to_plot, 'DEATH_DIAGNOSIS_DOMAIN'))
+        values.append(getFieldValue(df_to_plot, 'FOOD_WATER_CONSUMPTION_DOMAIN'))
+        values.append(getFieldValue(df_to_plot, 'FETAL_PATOLOGY_FINDINGS_DOMAIN'))
+        values.append(getFieldValue(df_to_plot, 'BODY_WEIGHT_DOMAIN'))
+        values.append(getFieldValue(df_to_plot, 'BODY_WEIGHT_GAIN_DOMAIN'))
+        values.append(getFieldValue(df_to_plot, 'ORGAN_MEASUREMENT_DOMAIN'))
+        values.append(getFieldValue(df_to_plot, 'CARDIOVASCULAR_DOMAIN'))
+        values.append(getFieldValue(df_to_plot, 'BEHAVIORAL_DOMAIN'))
+        values.append(getFieldValue(df_to_plot, 'MACROSCOPIC_FINDINGS_DOMAIN'))
+        values.append(getFieldValue(df_to_plot, 'ECG_DOMAIN'))
+        values.append(getFieldValue(df_to_plot, 'RESPIRATORY_FINDINGS_DOMAIN'))
+        values.append(getFieldValue(df_to_plot, 'PHARMACOKINETICS_PARAMETERS_DOMAIN'))
+        values.append(getFieldValue(df_to_plot, 'LABORATORY_FINDINGS_DOMAIN'))
+        list_to_plot.append([values, efpia, c])    
+    
+    barWidth=0.2    
+    in_ = 0    
+    for row in list_to_plot:
+        values = row[0]
+        label  = row[1]
+        color = row[2]
+        if(in_==0):
+            r1 = list(np.arange(len(values)))
+            in_=1
+        else:    
+            r1 = [x + barWidth for x in r1]
+        plt.bar(r1, values, color=color, width=barWidth, edgecolor='white', label=label)
+    
+    plt.xticks([r + barWidth for r in range(len(values))], xdata, rotation=90 )
+    plt.legend()
+    plt.title('Term mentions by Study Domain')
     plt.xlabel("Study Domain")
     plt.xticks(rotation=90)
     plt.ylabel("# Terms Mentions")
     plt.gcf().subplots_adjust(bottom=0.40)
     plt.gcf().set_size_inches(16.5, 6.0)
-    plt.savefig(parameters['outputDir']+'study_domain.png')
-    #plt.show()
+    plt.savefig(output)
+    plt.show()
     plt.gcf().clear()
 
     
