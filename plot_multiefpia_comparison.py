@@ -24,16 +24,23 @@ if __name__ == '__main__':
     import plot_multiefpia_comparison
     parameters = plot_multiefpia_comparison.ReadParameters(args)
     
+    
+    parameters['total_annotation_measurement'] = "bayer/total_annotation_measurement.dat,servier/total_annotation_measurement.dat"
+    efpias=['Bayer','Servier']
+    #['Bayer','Sanofi','Servier']
+    #['b','r','g']
+    colors = ['b','g']
+    
     total_annotation_measurement = parameters['total_annotation_measurement'].split(",")
     documents_annotation_measurement = parameters['documents_annotation_measurement'].split(",")
     if(len(total_annotation_measurement)!=len(documents_annotation_measurement)):
         logging.error("The numbers of total field and document files have to be the same.")
        
     #for path1,path2 in zip(total_annotation_measurement,documents_annotation_measurement):
-    #plot_multiefpia_comparation.plot_annotations_set_measurement(total_annotation_measurement, parameters['outputDir']+ 'all_set_annotations_percentage.png',['Bayer','Sanofi','Servier'],['b','r','g'],True)
-    plot_multiefpia_comparison.plot_annotations_set_measurement(total_annotation_measurement,parameters['outputDir']+ 'all_set_annotations_quantity.png',['Bayer','Sanofi','Servier'],['b','r','g'],False)
-    #plot_multiefpia_comparation.plot_annotations_study_domain(total_annotation_measurement,parameters['outputDir']+ 'study_domain_percentage.png',['Bayer','Sanofi','Servier'],['b','r','g'],True)
-    plot_multiefpia_comparison.plot_annotations_study_domain(total_annotation_measurement,parameters['outputDir']+ 'study_domain_quantity.png',['Bayer','Sanofi','Servier'],['b','r','g'],False)   
+    plot_multiefpia_comparison.plot_annotations_set_measurement(total_annotation_measurement, parameters['outputDir']+ 'all_set_annotations_percentage.png',efpias,colors,True)
+    plot_multiefpia_comparison.plot_annotations_set_measurement(total_annotation_measurement,parameters['outputDir']+ 'all_set_annotations_quantity.png',efpias,colors,False)
+    plot_multiefpia_comparison.plot_annotations_study_domain(total_annotation_measurement,parameters['outputDir']+ 'study_domain_percentage.png',efpias,colors,True)
+    plot_multiefpia_comparison.plot_annotations_study_domain(total_annotation_measurement,parameters['outputDir']+ 'study_domain_quantity.png',efpias,colors,False)   
 def ReadParameters(args):
     """Read the parameters of the module, see --help"""
     missing_parameter=False
@@ -82,8 +89,8 @@ def plot_annotations_set_measurement(annotation_measurement_paths, output,efpias
             tokens = float(tokens_df.get_value(tokens_df.index[0],2))
             df_to_plot['value'] = df_to_plot['value']/tokens
         #Get Specific fields for plot
-        xdata=['Anatomy','Study Domain', 'Sex', 'Study Test', 'Specimen', 'Route of Administration', 'Species', 'Dose', 'Group', 'Manifestation of Finding', 'Mode of Action',  \
-               'Treatment Related Term', 'Strain','No Treatment Related Term',  'Statical Significance', 'Risk Level' ]
+        xdata=['Anatomy','Study Domain', 'Sex', 'Study Test', 'Specimen', 'Route of \nAdministration', 'Species', 'Dose', 'Group', 'Manifestation of \nFinding', 'Mode of \nAction',  \
+               'Treatment \nRelated Term', 'Strain','No Treatment \nRelated Term',  'Statical \nSignificance', 'Risk Level' ]
         values.append(getFieldValue(df_to_plot, 'ANATOMY'))
         values.append(getFieldValue(df_to_plot, 'STUDY_DOMAIN'))
         values.append(getFieldValue(df_to_plot, 'SEX'))
@@ -119,8 +126,13 @@ def plot_annotations_set_measurement(annotation_measurement_paths, output,efpias
     plt.xticks([r + barWidth for r in range(len(values))], xdata, rotation=90 )
     plt.legend()
     plt.xlabel("Field")
-    plt.ylabel("# Terms Mentions")
-    plt.title('Annotated Fields')
+    if(percentage==True):
+        plt.ylabel("Annotations % over tokens")
+        plt.title('%  of term mentions annotated')
+    else:
+        plt.ylabel("# Terms Mentions")
+        plt.title('# of term mentions annotated')
+    
     plt.gcf().subplots_adjust(bottom=0.40)
     plt.gcf().set_size_inches(16.5, 6.0)
     plt.savefig(output)
@@ -138,7 +150,7 @@ def getFieldValue(df, fieldName):
 
 def plot_annotations_study_domain(annotation_measurement_paths, output, efpias,colors, percentage=True):
     list_to_plot = []
-    xdata=['Clinical','Microscopic', 'Death Diagnosis', 'Food and Water Consumption', 'Fetal Pathology', 'Body Weight', 'Body Weight Gain', 'Organ Measurement', 'Cardiovascular', 'Behavioral','Macroscopic', 'ECG',  \
+    xdata=['Clinical','Microscopic', 'Death \nDiagnosis', 'Food and Water \nConsumption', 'Fetal Pathology', 'Body Weight', 'Body Weight \nGain', 'Organ \nMeasurement', 'Cardiovascular', 'Behavioral','Macroscopic', 'ECG',  \
                'Respiratory', 'Pharmacokinetics','Laboratory']
     for path1,efpia,c in zip(annotation_measurement_paths,efpias,colors):
         values=[]
@@ -181,10 +193,16 @@ def plot_annotations_study_domain(annotation_measurement_paths, output, efpias,c
     
     plt.xticks([r + barWidth for r in range(len(values))], xdata, rotation=90 )
     plt.legend()
-    plt.title('Term mentions by Study Domain')
     plt.xlabel("Study Domain")
     plt.xticks(rotation=90)
-    plt.ylabel("# Terms Mentions")
+    if(percentage==True):
+        plt.ylabel("Annotations % over tokens")
+        plt.title('%  of term mentions annotated')
+    else:
+        plt.ylabel("# Terms Mentions")
+        plt.title('# of term mentions annotated')
+    
+    
     plt.gcf().subplots_adjust(bottom=0.40)
     plt.gcf().set_size_inches(16.5, 6.0)
     plt.savefig(output)
