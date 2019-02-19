@@ -25,11 +25,11 @@ if __name__ == '__main__':
     parameters = plot_multiefpia_comparison.ReadParameters(args)
     
     
-    parameters['total_annotation_measurement'] = "bayer/total_annotation_measurement.dat,servier/total_annotation_measurement.dat"
-    efpias=['Bayer','Servier']
-    #['Bayer','Sanofi','Servier']
-    #['b','r','g']
-    colors = ['b','g']
+    #parameters['total_annotation_measurement'] = "bayer/total_annotation_measurement.dat,servier/total_annotation_measurement.dat"
+    #efpias=['Bayer','Servier']
+    efpias=['Bayer','Sanofi','Servier']
+    colors =['b','r','g']
+    #colors = ['b','g']
     
     total_annotation_measurement = parameters['total_annotation_measurement'].split(",")
     documents_annotation_measurement = parameters['documents_annotation_measurement'].split(",")
